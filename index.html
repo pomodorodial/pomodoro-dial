@@ -1564,7 +1564,8 @@
     const render = () => {
       try {
         const id = window.turnstile.render('#turnstileBox', {
-          sitekey: TURNSTILE_SITE_KEY, theme: 'auto', retry: 'auto',
+          sitekey: TURNSTILE_SITE_KEY, retry: 'auto',
+          theme: (document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) ? 'dark' : 'light',
           callback: t => { turnstileToken = t; setFbStatus('', false); },
           'expired-callback': () => { turnstileToken = ''; },
           'error-callback': code => { turnstileToken = ''; setFbStatus('Human check error ' + (code || '') + '. Reload the page and try again, or email feedback@pomodorodial.com.', true); }
