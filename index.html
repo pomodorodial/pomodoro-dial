@@ -35,10 +35,15 @@
   "featureList": ["25/5/15 minute sessions", "Adjust time by the minute", "Long break after four sessions", "End-of-session chime", "Keyboard shortcuts", "Dark mode"]
 }
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@200..500&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="preload" href="fonts/azeret-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+  /* Self-hosted fonts (SIL Open Font License, see fonts/) */
+  @font-face { font-family: 'Azeret Mono'; font-style: normal; font-weight: 200 500; font-display: swap; src: url(fonts/azeret-mono-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Azeret Mono'; font-style: normal; font-weight: 200 500; font-display: swap; src: url(fonts/azeret-mono-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 400 600; font-display: swap; src: url(fonts/instrument-sans-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 400 600; font-display: swap; src: url(fonts/instrument-sans-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
   :root {
     color-scheme: light;
     --bg: #F4F3F1;
@@ -779,6 +784,8 @@
     <dd>Yes. It counts from the clock, so the time is exact when you come back, and the chime still plays. If you close the page and reopen it during a session, it picks up where it was.</dd>
     <dt>Can I change the 25 minutes?</dt>
     <dd>Yes. Use −1 and +1, hold Shift for five, or click the digits and type any length from 1 to 180 minutes. Settings holds the default for each session type.</dd>
+    <dt>Can I share my intervals as a link?</dt>
+    <dd>Yes. Put them in the address, for example <a href="?focus=50&amp;short=10&amp;long=20">pomodorodial.com/?focus=50&amp;short=10&amp;long=20</a>. Opening that link sets those lengths. Add <em>sets=3</em> to change how many focus sessions come before a long break.</dd>
     <dt>Do I need an account?</dt>
     <dd>No. There is nothing to sign up for and nothing to install.</dd>
     <dt>Will it remember my settings?</dt>
@@ -817,6 +824,19 @@
   let settings = Object.assign({}, DEFAULTS, load(KEYS.settings, {}));
   for (const k of Object.keys(LIMITS)) settings[k] = clamp(Math.round(Number(settings[k]) || DEFAULTS[k]), LIMITS[k][0], LIMITS[k][1]);
 
+  // URL presets, e.g. /?focus=50&short=10&long=20&sets=4
+  let presetApplied = false;
+  try {
+    const q = new URLSearchParams(location.search);
+    const params = { focus: 'focus', short: 'short', long: 'long', sets: 'setLength' };
+    for (const param in params) {
+      if (!q.has(param)) continue;
+      const v = parseInt(q.get(param), 10);
+      if (!isNaN(v)) { const key = params[param]; settings[key] = clamp(v, LIMITS[key][0], LIMITS[key][1]); presetApplied = true; }
+    }
+    if (presetApplied) store(KEYS.settings, settings);
+  } catch (e) {}
+
   const today = new Date().toDateString();
   let stats = load(KEYS.stats, null);
   if (!stats || stats.date !== today) stats = { date: today, done: 0, seconds: 0, setDone: 0 };
@@ -824,6 +844,7 @@
   const fresh = mode => ({ mode, duration: settings[mode] * 60, remaining: settings[mode] * 60, running: false, endAt: 0 });
   let state = load(KEYS.state, null);
   if (!state || !MODES[state.mode] || !(state.duration > 0)) state = fresh('focus');
+  if (presetApplied && !state.running) state = fresh('focus');
 
   const save = () => store(KEYS.state, state);
   const saveSettings = () => store(KEYS.settings, settings);

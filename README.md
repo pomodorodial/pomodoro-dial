@@ -7,6 +7,8 @@ A free, single-file Pomodoro timer with a wind-up dial. Everything runs in the b
 - Accurate in background tabs, resumes after a reload
 - Chime, optional ticking, desktop notifications
 - Keyboard shortcuts, light and dark themes
+- Presets by link: `/?focus=50&short=10&long=20&sets=4` sets the durations and the number of focus sessions before a long break
+- Fonts served from the site itself (`fonts/`, SIL Open Font License); the only third-party request is the analytics beacon
 
 ## Run it locally
 
