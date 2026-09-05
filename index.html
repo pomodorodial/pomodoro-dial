@@ -1556,7 +1556,8 @@
   let fbKind = 'idea', turnstileWidget = null, turnstileToken = '';
   const feedbackOpen = () => !!openPanel && openPanel.el === feedbackSheet;
   const setFbStatus = (msg, isError) => { fbStatus.textContent = msg; fbStatus.classList.toggle('error', !!isError); };
-  const TURNSTILE_BLOCKED = 'The human check could not load. If you use an ad blocker, allow challenges.cloudflare.com, or email feedback@pomodorodial.com instead.';
+  const TURNSTILE_BLOCKED = 'Your browser or an extension blocked the human check (challenges.cloudflare.com). Allow it and reload, or email feedback@pomodorodial.com instead.';
+  const TURNSTILE_FAILED = 'The human check loaded but could not start. Reload the page and try again, or email feedback@pomodorodial.com.';
   function loadTurnstile() {
     if (!TURNSTILE_SITE_KEY || turnstileWidget !== null) return;
     turnstileWidget = 'loading';
@@ -1568,10 +1569,10 @@
           'expired-callback': () => { turnstileToken = ''; },
           'error-callback': code => { turnstileToken = ''; setFbStatus('Human check error ' + (code || '') + '. Reload the page and try again, or email feedback@pomodorodial.com.', true); }
         });
-        if (id === undefined) { turnstileWidget = null; setFbStatus(TURNSTILE_BLOCKED, true); } else turnstileWidget = id;
-      } catch (e) { turnstileWidget = null; setFbStatus(TURNSTILE_BLOCKED, true); }
+        if (id === undefined) { turnstileWidget = null; setFbStatus(TURNSTILE_FAILED, true); } else turnstileWidget = id;
+      } catch (e) { turnstileWidget = null; setFbStatus(TURNSTILE_FAILED + ' (' + (e && e.message ? e.message : 'error') + ')', true); }
     };
-    const start = () => { if (window.turnstile && window.turnstile.ready) window.turnstile.ready(render); else render(); };
+    const start = () => { try { if (window.turnstile && window.turnstile.ready) window.turnstile.ready(render); else render(); } catch (e) { render(); } };
     if (window.turnstile) { start(); return; }
     const sc = document.createElement('script');
     sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async = true;
