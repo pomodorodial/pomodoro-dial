@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://achrafchliyah.github.io/pomodoro-dial/sitemap.xml
+Sitemap: https://pomodorodial.com/sitemap.xml
