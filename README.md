@@ -3,6 +3,7 @@
 A free, single-file Pomodoro timer with a wind-up dial. Everything runs in the browser; nothing is sent to a server.
 
 - Tasks with pomodoro estimates and a rough finish time
+- Stats: pomodoros per day, streaks, lifetime totals, CSV export
 - 25 / 5 / 15 minute sessions, long break after four
 - Adjust by the minute (−1, +1, Shift for five) or click the digits and type
 - Accurate in background tabs, resumes after a reload

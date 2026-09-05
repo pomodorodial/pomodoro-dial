@@ -32,7 +32,7 @@
   "browserRequirements": "Requires JavaScript",
   "isAccessibleForFree": true,
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "featureList": ["Tasks list with pomodoro estimates", "25/5/15 minute sessions", "Adjust time by the minute", "Long break after four sessions", "End-of-session chime", "Keyboard shortcuts", "Dark mode"]
+  "featureList": ["Tasks list with pomodoro estimates", "Daily stats, streaks and CSV export", "25/5/15 minute sessions", "Adjust time by the minute", "Long break after four sessions", "End-of-session chime", "Keyboard shortcuts", "Dark mode"]
 }
 </script>
 <link rel="preload" href="fonts/azeret-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -606,6 +606,24 @@
   .status { max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   @media (hover: none) { .mini, .task-del { opacity: .7; } }
 
+  /* Stats */
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-row.four { grid-template-columns: repeat(2, 1fr); }
+  .stat { padding: 12px 12px 10px; border-radius: 12px; background: var(--bg-sunk); display: flex; flex-direction: column; gap: 4px; }
+  .stat b { font-family: 'Azeret Mono', ui-monospace, monospace; font-weight: 500; font-size: 26px; line-height: 1; letter-spacing: -.02em; color: var(--text); font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 12px; color: var(--text-3); }
+  .stat-note { margin: 8px 0 0; font-size: 12.5px; color: var(--text-3); }
+  .chart { width: 100%; height: auto; display: block; overflow: visible; margin-top: 4px; }
+  .chart .base { stroke: var(--line-strong); stroke-width: 1; }
+  .chart .bar { fill: var(--focus); transition: opacity .15s; }
+  .chart .bar.past { opacity: .55; }
+  .chart .bar.zero { fill: var(--line-strong); opacity: 1; }
+  .chart .day:hover .bar { opacity: 1; }
+  .chart text { font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 11px; fill: var(--text-3); }
+  .chart .lbl.now { fill: var(--text); font-weight: 600; }
+  .chart .val { font-family: 'Azeret Mono', ui-monospace, monospace; font-size: 11px; fill: var(--text-2); }
+  button#today { font-variant-numeric: tabular-nums; }
+
   /* About section (crawlable content below the timer) */
   a.ghost { text-decoration: none; }
   .topbar-actions { align-items: center; }
@@ -644,6 +662,9 @@
     </div>
     <div class="topbar-actions">
       <a class="ghost" href="#about">About</a>
+      <button class="icon-btn" id="statsBtn" aria-label="Stats" aria-expanded="false" title="Stats and streaks">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="20" x2="6" y2="11"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
+      </button>
       <button class="icon-btn" id="soundBtn" aria-pressed="true" aria-label="Sound on" title="Chime on or off">
         <svg class="icon" id="bellOn" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <svg class="icon" id="bellOff" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -719,7 +740,7 @@
       <div class="dots" id="dots" aria-hidden="true"></div>
       <span id="setLabel">0 of 4 this set</span>
     </div>
-    <div id="today">0 pomodoros · 0 min today</div>
+    <button class="ghost" id="today" title="Open stats">0 pomodoros · 0 min today</button>
   </footer>
 
   <div class="scrim" id="scrim"></div>
@@ -802,6 +823,43 @@
     </section>
   </aside>
 
+  <aside class="sheet" id="statsSheet" aria-label="Stats" aria-hidden="true">
+    <div class="sheet-head">
+      <h2>Stats</h2>
+      <button class="icon-btn" id="closeStats" aria-label="Close stats">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <section class="group">
+      <h3>Today</h3>
+      <div class="stat-row">
+        <div class="stat"><b id="stToday">0</b><span>pomodoros</span></div>
+        <div class="stat"><b id="stTodayMin">0</b><span>minutes</span></div>
+        <div class="stat"><b id="stStreak">0</b><span>day streak</span></div>
+      </div>
+    </section>
+    <section class="group">
+      <h3>Last 7 days</h3>
+      <svg class="chart" id="chart" viewBox="0 0 320 120" role="img" aria-label="Pomodoros per day for the last 7 days"></svg>
+      <p class="stat-note" id="stWeek"></p>
+    </section>
+    <section class="group">
+      <h3>All time</h3>
+      <div class="stat-row four">
+        <div class="stat"><b id="stTotal">0</b><span>pomodoros</span></div>
+        <div class="stat"><b id="stHours">0</b><span>hours of focus</span></div>
+        <div class="stat"><b id="stDays">0</b><span>days active</span></div>
+        <div class="stat"><b id="stBest">0</b><span>best streak</span></div>
+      </div>
+    </section>
+    <section class="group">
+      <h3>Your data</h3>
+      <div class="row"><span class="lbl">Export as CSV<small>One line per day: date, pomodoros, minutes</small></span><button class="ghost" id="exportCsv">Download</button></div>
+      <div class="row"><span class="lbl">Delete history<small>Removes every day. Cannot be undone.</small></span><button class="ghost" id="clearHistory">Delete</button></div>
+      <p class="stat-note">Everything stays in this browser. Nothing is sent anywhere.</p>
+    </section>
+  </aside>
+
   <div class="toast" id="toast" role="status"></div>
 </div>
 
@@ -823,6 +881,7 @@
   <h2>Why this timer</h2>
   <ul>
     <li><strong>Tasks with estimates.</strong> Write what you are working on, guess how many pomodoros it needs, and watch the count fill in as sessions finish. The list shows roughly when you will be done.</li>
+    <li><strong>Stats and streaks.</strong> Pomodoros per day for the last week, your current and best streak, and lifetime totals, with a CSV export. Open them from the bar-chart icon or the count in the footer.</li>
     <li><strong>Adjust by the minute.</strong> Add or remove minutes mid-session without losing your place.</li>
     <li><strong>Accurate in the background.</strong> It counts from the clock, not from ticks, so a hidden tab or a laptop nap doesn't throw it off.</li>
     <li><strong>Keyboard first.</strong> Space, the arrow keys and single letters do everything.</li>
@@ -883,7 +942,7 @@
   const TIPS = { short: 'Stand up, look far away', long: 'Walk, water, stretch' };
   const LIMITS = { focus: [1, 180], short: [1, 60], long: [1, 60], setLength: [1, 12] };
   const DEFAULTS = { focus: 25, short: 5, long: 15, setLength: 4, autoBreak: false, autoFocus: false, chime: true, ticking: false, notify: false };
-  const KEYS = { settings: 'pomodoro-dial.settings', stats: 'pomodoro-dial.stats', state: 'pomodoro-dial.state', tasks: 'pomodoro-dial.tasks', activeTask: 'pomodoro-dial.activeTask' };
+  const KEYS = { settings: 'pomodoro-dial.settings', stats: 'pomodoro-dial.stats', state: 'pomodoro-dial.state', tasks: 'pomodoro-dial.tasks', activeTask: 'pomodoro-dial.activeTask', history: 'pomodoro-dial.history' };
 
   const load = (k, fb) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch (e) { return fb; } };
   const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
@@ -927,6 +986,7 @@
   const dotsEl = $('#dots'), setLabel = $('#setLabel'), todayEl = $('#today'), todaySheet = $('#todaySheet');
   const sheet = $('#sheet'), scrim = $('#scrim'), settingsBtn = $('#settingsBtn'), closeBtn = $('#closeSheet'), toastEl = $('#toast');
   const soundBtn = $('#soundBtn'), bellOn = $('#bellOn'), bellOff = $('#bellOff');
+  const statsSheet = $('#statsSheet'), statsBtn = $('#statsBtn'), closeStatsBtn = $('#closeStats');
 
   // ---------- dial: 60 minute ticks, numerals every 5 ----------
   const NS = 'http://www.w3.org/2000/svg', C = 200, CIRC = 2 * Math.PI * 194;
@@ -983,7 +1043,8 @@
     setLabel.textContent = done + ' of ' + n + ' this set';
     const mins = Math.round(stats.seconds / 60);
     const s = stats.done + ' pomodoro' + (stats.done === 1 ? '' : 's') + ' · ' + mins + ' min';
-    todayEl.textContent = s + ' today';
+    const st = streaks();
+    todayEl.textContent = s + ' today' + (st.cur >= 2 ? ' · ' + st.cur + '-day streak' : '');
     todaySheet.textContent = s;
   }
 
@@ -1050,11 +1111,12 @@
   const skip = () => setMode(state.mode === 'focus' ? 'short' : 'focus');
 
   function complete(silent) {
-    stopLoop();
+    stopLoop(); rollover();
     const finished = state.mode;
     let next = 'focus';
     if (finished === 'focus') {
       stats.done += 1; stats.seconds += state.duration; stats.setDone += 1;
+      recordSession(state.duration);
       const at = tasks.find(t => t.id === activeTaskId); if (at) { at.done += 1; saveTasks(); }
       next = stats.setDone >= settings.setLength ? 'long' : 'short';
       saveStats();
@@ -1178,20 +1240,27 @@
   function showToast(msg, ms = 6000) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, ms); }
   function hideToast() { toastEl.classList.remove('show'); }
 
-  function openSheet() {
-    sheet.classList.add('open'); scrim.classList.add('open');
-    sheet.setAttribute('aria-hidden', 'false'); sheet.inert = false;
-    settingsBtn.setAttribute('aria-expanded', 'true');
-    closeBtn.focus();
+  let openPanel = null;
+  function openPanelEl(el, btn, focusEl) {
+    closeAny();
+    el.classList.add('open'); scrim.classList.add('open');
+    el.setAttribute('aria-hidden', 'false'); el.inert = false;
+    btn.setAttribute('aria-expanded', 'true');
+    openPanel = { el, btn }; focusEl.focus();
   }
-  function closeSheet() {
-    if (!sheet.classList.contains('open')) return;
-    sheet.classList.remove('open'); scrim.classList.remove('open');
-    sheet.setAttribute('aria-hidden', 'true'); sheet.inert = true;
-    settingsBtn.setAttribute('aria-expanded', 'false');
-    settingsBtn.focus();
+  function closeAny() {
+    if (!openPanel) return;
+    const { el, btn } = openPanel;
+    el.classList.remove('open'); scrim.classList.remove('open');
+    el.setAttribute('aria-hidden', 'true'); el.inert = true;
+    btn.setAttribute('aria-expanded', 'false');
+    openPanel = null; btn.focus();
   }
-  const sheetOpen = () => sheet.classList.contains('open');
+  const openSheet = () => openPanelEl(sheet, settingsBtn, closeBtn);
+  const closeSheet = closeAny;
+  const sheetOpen = () => !!openPanel && openPanel.el === sheet;
+  const statsOpen = () => !!openPanel && openPanel.el === statsSheet;
+  const openStats = () => { renderStats(); openPanelEl(statsSheet, statsBtn, closeStatsBtn); };
 
   function syncSettings() {
     $$('.stepper').forEach(st => { $('input', st).value = settings[st.dataset.key]; });
@@ -1282,6 +1351,78 @@
   });
   clearDoneBtn.addEventListener('click', () => { tasks = tasks.filter(t => !t.completed); if (!tasks.some(t => t.id === activeTaskId)) activeTaskId = null; saveTasks(); render(); });
 
+  // ---------- history, streaks, stats ----------
+  const dayKey = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const keyToDate = k => { const p = k.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+  const shiftKey = (k, n) => { const d = keyToDate(k); d.setDate(d.getDate() + n); return dayKey(d); };
+  let history = load(KEYS.history, {});
+  if (!history || typeof history !== 'object' || Array.isArray(history)) history = {};
+  for (const k of Object.keys(history)) {
+    const h = history[k];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !h || typeof h !== 'object') { delete history[k]; continue; }
+    history[k] = { done: Math.max(0, Math.round(Number(h.done)) || 0), seconds: Math.max(0, Math.round(Number(h.seconds)) || 0) };
+  }
+  if (stats.done > 0 && !history[dayKey()]) history[dayKey()] = { done: stats.done, seconds: stats.seconds };
+  const saveHistory = () => store(KEYS.history, history);
+  function rollover() { const t = new Date().toDateString(); if (stats.date !== t) { stats = { date: t, done: 0, seconds: 0, setDone: 0 }; saveStats(); } }
+  function recordSession(seconds) { const k = dayKey(); const h = history[k] || (history[k] = { done: 0, seconds: 0 }); h.done += 1; h.seconds += seconds; saveHistory(); }
+  function streaks() {
+    const has = k => !!history[k] && history[k].done > 0;
+    let k = dayKey(); if (!has(k)) k = shiftKey(k, -1);
+    let cur = 0; while (has(k)) { cur++; k = shiftKey(k, -1); }
+    let best = 0, run = 0, prev = null;
+    for (const d of Object.keys(history).filter(has).sort()) { run = (prev && shiftKey(prev, 1) === d) ? run + 1 : 1; if (run > best) best = run; prev = d; }
+    return { cur, best };
+  }
+  const fmtDur = sec => { const m = Math.round(sec / 60), h = Math.floor(m / 60); return h ? h + ' h ' + (m % 60) + ' min' : m + ' min'; };
+  function renderStats() {
+    rollover();
+    const t = history[dayKey()] || { done: 0, seconds: 0 }, st = streaks();
+    $('#stToday').textContent = t.done; $('#stTodayMin').textContent = Math.round(t.seconds / 60); $('#stStreak').textContent = st.cur;
+    const days = []; for (let i = 6; i >= 0; i--) days.push(shiftKey(dayKey(), -i));
+    const vals = days.map(k => (history[k] || { done: 0 }).done);
+    const weekDone = vals.reduce((a, b) => a + b, 0), weekSec = days.reduce((a, k) => a + ((history[k] || { seconds: 0 }).seconds), 0);
+    $('#stWeek').textContent = weekDone + ' pomodoro' + (weekDone === 1 ? '' : 's') + ' · ' + fmtDur(weekSec);
+    drawChart(days, vals);
+    const all = Object.values(history);
+    const total = all.reduce((a, h) => a + h.done, 0), totalSec = all.reduce((a, h) => a + h.seconds, 0), active = all.filter(h => h.done > 0).length;
+    $('#stTotal').textContent = total;
+    $('#stHours').textContent = totalSec >= 36000 ? String(Math.round(totalSec / 3600)) : (totalSec / 3600).toFixed(1);
+    $('#stDays').textContent = active; $('#stBest').textContent = st.best;
+  }
+  function drawChart(days, vals) {
+    const svg = $('#chart'); svg.innerHTML = '';
+    const H = 120, left = 8, right = 312, base = 96, top = 18, slot = (right - left) / 7, bw = 24, max = Math.max(1, ...vals), todayK = dayKey();
+    const mk = (parent, tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const a in attrs) e.setAttribute(a, attrs[a]); if (text !== undefined) e.textContent = text; parent.appendChild(e); return e; };
+    mk(svg, 'title', {}, 'Pomodoros per day, last 7 days');
+    mk(svg, 'line', { class: 'base', x1: left, x2: right, y1: base + 0.5, y2: base + 0.5 });
+    days.forEach((k, i) => {
+      const v = vals[i], x = left + slot * i + (slot - bw) / 2, h = v ? Math.max(6, (base - top) * v / max) : 0, isToday = k === todayK, d = keyToDate(k);
+      const g = mk(svg, 'g', { class: 'day' + (isToday ? ' today' : '') });
+      const bar = mk(g, 'path', { class: 'bar' + (v ? (isToday ? '' : ' past') : ' zero'), d: v
+        ? 'M' + x + ',' + base + ' v' + (-(h - 4)) + ' a4,4 0 0 1 4,-4 h' + (bw - 8) + ' a4,4 0 0 1 4,4 v' + (h - 4) + ' z'
+        : 'M' + x + ',' + (base - 2) + ' h' + bw + ' v2 h' + (-bw) + ' z' });
+      mk(bar, 'title', {}, d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' }) + ': ' + v + ' pomodoro' + (v === 1 ? '' : 's'));
+      if (isToday || (v === max && v > 0)) mk(g, 'text', { class: 'val', x: x + bw / 2, y: (v ? base - h : base) - 6, 'text-anchor': 'middle' }, v);
+      mk(g, 'text', { class: 'lbl' + (isToday ? ' now' : ''), x: x + bw / 2, y: H - 8, 'text-anchor': 'middle' }, d.toLocaleDateString([], { weekday: 'short' }));
+    });
+  }
+  function exportCsv() {
+    const rows = [['date', 'pomodoros', 'minutes']].concat(Object.keys(history).sort().map(k => [k, history[k].done, Math.round(history[k].seconds / 60)]));
+    const blob = new Blob([rows.map(r => r.join(',')).join('\n') + '\n'], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pomodoro-dial-history.csv';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  statsBtn.addEventListener('click', () => statsOpen() ? closeAny() : openStats());
+  closeStatsBtn.addEventListener('click', closeAny);
+  todayEl.addEventListener('click', openStats);
+  $('#exportCsv').addEventListener('click', exportCsv);
+  $('#clearHistory').addEventListener('click', () => {
+    if (!confirm('Delete all history? This cannot be undone.')) return;
+    history = {}; saveHistory(); stats = { date: new Date().toDateString(), done: 0, seconds: 0, setDone: 0 }; saveStats();
+    render(); renderStats(); showToast('History deleted');
+  });
+
   // ---------- wiring ----------
   primary.addEventListener('click', toggle);
   $('#minus').addEventListener('click', e => adjust(e.shiftKey ? -5 : -1));
@@ -1291,9 +1432,9 @@
   $$('.mode').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
   settingsBtn.addEventListener('click', () => sheetOpen() ? closeSheet() : openSheet());
   closeBtn.addEventListener('click', closeSheet);
-  scrim.addEventListener('click', closeSheet);
+  scrim.addEventListener('click', closeAny);
   soundBtn.addEventListener('click', () => { ensureAudio(); changeSetting('chime', !settings.chime); });
-  $('#resetToday').addEventListener('click', () => { stats = { date: today, done: 0, seconds: 0, setDone: 0 }; saveStats(); render(); showToast('Today’s count cleared'); });
+  $('#resetToday').addEventListener('click', () => { stats = { date: new Date().toDateString(), done: 0, seconds: 0, setDone: 0 }; saveStats(); delete history[dayKey()]; saveHistory(); render(); showToast('Today’s count cleared'); });
 
   $$('.stepper').forEach(st => {
     const k = st.dataset.key, input = $('input', st);
@@ -1331,7 +1472,7 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden && state.running) tick(); });
 
   // ---------- boot ----------
-  sheet.inert = true;
+  sheet.inert = true; statsSheet.inert = true;
   syncSettings();
   if (state.running) {
     if (state.endAt > now()) startLoop();
