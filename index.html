@@ -1556,18 +1556,26 @@
   let fbKind = 'idea', turnstileWidget = null, turnstileToken = '';
   const feedbackOpen = () => !!openPanel && openPanel.el === feedbackSheet;
   const setFbStatus = (msg, isError) => { fbStatus.textContent = msg; fbStatus.classList.toggle('error', !!isError); };
+  const TURNSTILE_BLOCKED = 'The human check could not load. If you use an ad blocker, allow challenges.cloudflare.com, or email feedback@pomodorodial.com instead.';
   function loadTurnstile() {
     if (!TURNSTILE_SITE_KEY || turnstileWidget !== null) return;
     turnstileWidget = 'loading';
     const render = () => {
       try {
-        turnstileWidget = window.turnstile.render('#turnstile', { sitekey: TURNSTILE_SITE_KEY, theme: 'auto', callback: t => { turnstileToken = t; }, 'expired-callback': () => { turnstileToken = ''; }, 'error-callback': () => { turnstileToken = ''; } });
-      } catch (e) { turnstileWidget = null; }
+        const id = window.turnstile.render('#turnstile', {
+          sitekey: TURNSTILE_SITE_KEY, theme: 'auto', retry: 'auto',
+          callback: t => { turnstileToken = t; setFbStatus('', false); },
+          'expired-callback': () => { turnstileToken = ''; },
+          'error-callback': code => { turnstileToken = ''; setFbStatus('Human check error ' + (code || '') + '. Reload the page and try again, or email feedback@pomodorodial.com.', true); }
+        });
+        if (id === undefined) { turnstileWidget = null; setFbStatus(TURNSTILE_BLOCKED, true); } else turnstileWidget = id;
+      } catch (e) { turnstileWidget = null; setFbStatus(TURNSTILE_BLOCKED, true); }
     };
-    if (window.turnstile) { render(); return; }
+    const start = () => { if (window.turnstile && window.turnstile.ready) window.turnstile.ready(render); else render(); };
+    if (window.turnstile) { start(); return; }
     const sc = document.createElement('script');
     sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async = true;
-    sc.onload = render; sc.onerror = () => { turnstileWidget = null; };
+    sc.onload = start; sc.onerror = () => { turnstileWidget = null; setFbStatus(TURNSTILE_BLOCKED, true); };
     document.head.appendChild(sc);
   }
   function openFeedback() { openPanelEl(feedbackSheet, feedbackBtn, fbMessage); loadTurnstile(); }
@@ -1580,7 +1588,7 @@
     e.preventDefault();
     const message = fbMessage.value.trim();
     if (message.length < 3) { setFbStatus('Write a few words first.', true); fbMessage.focus(); return; }
-    if (TURNSTILE_SITE_KEY && !turnstileToken) { setFbStatus('One moment, the human check is still running.', false); return; }
+    if (TURNSTILE_SITE_KEY && !turnstileToken) { setFbStatus(turnstileWidget === null ? TURNSTILE_BLOCKED : 'One moment, the human check is still running. If nothing appears above Send within a few seconds, reload the page.', turnstileWidget === null); return; }
     fbSend.disabled = true; setFbStatus('Sending…', false);
     try {
       const r = await fetch(FEEDBACK_API, {
