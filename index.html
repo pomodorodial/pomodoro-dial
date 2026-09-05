@@ -32,7 +32,7 @@
   "browserRequirements": "Requires JavaScript",
   "isAccessibleForFree": true,
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "featureList": ["25/5/15 minute sessions", "Adjust time by the minute", "Long break after four sessions", "End-of-session chime", "Keyboard shortcuts", "Dark mode"]
+  "featureList": ["Tasks list with pomodoro estimates", "25/5/15 minute sessions", "Adjust time by the minute", "Long break after four sessions", "End-of-session chime", "Keyboard shortcuts", "Dark mode"]
 }
 </script>
 <link rel="preload" href="fonts/azeret-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -554,6 +554,58 @@
     .running .glow { animation: none; }
     .arc, .tick, .glow, .sheet, .scrim, .toast, .primary, .step, .switch::after { transition: none; }
   }
+  /* Tasks */
+  .tasks { width: min(100%, 440px); display: flex; flex-direction: column; gap: 10px; }
+  .tasks-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .tasks-head h2 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
+  .tasks-head .meta { display: flex; align-items: baseline; gap: 12px; font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .task-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .task {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px 9px 12px; border-radius: 12px;
+    background: var(--bg-elev); border: 1px solid var(--line);
+    cursor: pointer; transition: border-color .2s, background .2s;
+  }
+  .task:hover { border-color: var(--line-strong); }
+  .task.active { border-color: color-mix(in oklab, var(--accent) 45%, var(--line)); background: color-mix(in oklab, var(--accent) 7%, var(--bg-elev)); }
+  .check {
+    width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%;
+    border: 1.5px solid var(--line-strong); background: transparent; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center; color: var(--on-accent);
+    transition: background .2s, border-color .2s;
+  }
+  .check .icon { width: 12px; height: 12px; stroke-width: 3; opacity: 0; }
+  .check:hover { border-color: var(--accent); }
+  .task.completed .check { background: var(--accent); border-color: var(--accent); }
+  .task.completed .check .icon { opacity: 1; }
+  .task-title { flex: 1; min-width: 0; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+  .task.active .task-title { font-weight: 600; }
+  .task.completed .task-title { text-decoration: line-through; color: var(--text-3); font-weight: 400; }
+  .task-rename { flex: 1; min-width: 0; font: inherit; font-size: 14.5px; color: var(--text); background: transparent; border: 0; border-bottom: 2px solid var(--accent); outline: none; padding: 0; }
+  .task-count { display: inline-flex; align-items: center; gap: 2px; font-family: 'Azeret Mono', ui-monospace, monospace; font-size: 12.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .task-count span { min-width: 34px; text-align: center; }
+  .mini, .task-del {
+    width: 24px; height: 24px; border-radius: 50%; border: 0; background: transparent; color: var(--text-3);
+    display: inline-flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1; padding: 0;
+    opacity: .45; transition: opacity .15s, background .15s, color .15s;
+  }
+  .task:hover .mini, .task:hover .task-del, .task:focus-within .mini, .task:focus-within .task-del { opacity: 1; }
+  .mini:hover, .task-del:hover { background: color-mix(in oklab, var(--text) 8%, transparent); color: var(--text); }
+  .task-del:hover { color: var(--focus); }
+  .task-add { display: flex; gap: 8px; }
+  .task-add input {
+    flex: 1; min-width: 0; padding: 10px 14px; border-radius: 12px;
+    border: 1px solid var(--line-strong); background: var(--bg-elev); color: var(--text); font-size: 14px; outline: none;
+    transition: border-color .2s;
+  }
+  .task-add input::placeholder { color: var(--text-3); }
+  .task-add input:focus { border-color: var(--accent); }
+  .task-add button { padding: 0 16px; border-radius: 12px; border: 1px solid var(--line-strong); background: transparent; color: var(--text-2); font-size: 14px; font-weight: 500; transition: border-color .2s, color .2s; }
+  .task-add button:hover { border-color: var(--accent); color: var(--accent); }
+  .tasks-summary { font-size: 13px; color: var(--text-3); text-align: center; font-variant-numeric: tabular-nums; }
+  .status { max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (hover: none) { .mini, .task-del { opacity: .7; } }
+
   /* About section (crawlable content below the timer) */
   a.ghost { text-decoration: none; }
   .topbar-actions { align-items: center; }
@@ -647,6 +699,19 @@
     </div>
 
     <p class="hint">Space starts and pauses · ↑ ↓ change a minute · click the time to type a length</p>
+
+    <section class="tasks" aria-label="Tasks">
+      <div class="tasks-head">
+        <h2>Tasks</h2>
+        <div class="meta"><span id="tasksCount"></span><button class="ghost" id="clearDone" hidden>Clear finished</button></div>
+      </div>
+      <ul class="task-list" id="taskList"></ul>
+      <form class="task-add" id="taskForm" autocomplete="off">
+        <input id="taskInput" type="text" maxlength="120" placeholder="What are you working on?" aria-label="New task">
+        <button type="submit">Add</button>
+      </form>
+      <p class="tasks-summary" id="tasksSummary" hidden></p>
+    </section>
   </main>
 
   <footer class="footer">
@@ -730,6 +795,7 @@
         <kbd>R</kbd><span>Reset the session</span>
         <kbd>N</kbd><span>Skip to the next session</span>
         <kbd>1 2 3</kbd><span>Focus, short break, long break</span>
+        <kbd>T</kbd><span>Add a task</span>
         <kbd>S</kbd><span>Open or close settings</span>
         <kbd>Esc</kbd><span>Close</span>
       </div>
@@ -756,6 +822,7 @@
 
   <h2>Why this timer</h2>
   <ul>
+    <li><strong>Tasks with estimates.</strong> Write what you are working on, guess how many pomodoros it needs, and watch the count fill in as sessions finish. The list shows roughly when you will be done.</li>
     <li><strong>Adjust by the minute.</strong> Add or remove minutes mid-session without losing your place.</li>
     <li><strong>Accurate in the background.</strong> It counts from the clock, not from ticks, so a hidden tab or a laptop nap doesn't throw it off.</li>
     <li><strong>Keyboard first.</strong> Space, the arrow keys and single letters do everything.</li>
@@ -773,6 +840,7 @@
       <tr><td><kbd>R</kbd></td><td>Reset the session</td></tr>
       <tr><td><kbd>N</kbd></td><td>Skip to the next session</td></tr>
       <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Focus, short break, long break</td></tr>
+      <tr><td><kbd>T</kbd></td><td>Jump to the task box</td></tr>
       <tr><td><kbd>S</kbd></td><td>Open or close Settings</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Close Settings</td></tr>
     </tbody>
@@ -813,7 +881,7 @@
   const TIPS = { short: 'Stand up, look far away', long: 'Walk, water, stretch' };
   const LIMITS = { focus: [1, 180], short: [1, 60], long: [1, 60], setLength: [1, 12] };
   const DEFAULTS = { focus: 25, short: 5, long: 15, setLength: 4, autoBreak: false, autoFocus: false, chime: true, ticking: false, notify: false };
-  const KEYS = { settings: 'pomodoro-dial.settings', stats: 'pomodoro-dial.stats', state: 'pomodoro-dial.state' };
+  const KEYS = { settings: 'pomodoro-dial.settings', stats: 'pomodoro-dial.stats', state: 'pomodoro-dial.state', tasks: 'pomodoro-dial.tasks', activeTask: 'pomodoro-dial.activeTask' };
 
   const load = (k, fb) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch (e) { return fb; } };
   const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
@@ -925,8 +993,10 @@
     $$('.mode').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)));
     modeName.textContent = MODES[state.mode];
     timeEl.classList.toggle('editable', isFresh());
+    const activeTask = tasks.find(t => t.id === activeTaskId && !t.completed);
     let status = 'Ready';
     if (paused) status = 'Paused';
+    else if (state.mode === 'focus' && activeTask) status = activeTask.title;
     else if (state.running) status = state.mode === 'focus'
       ? 'Session ' + Math.min(stats.setDone + 1, settings.setLength) + ' of ' + settings.setLength
       : TIPS[state.mode];
@@ -935,6 +1005,7 @@
     primaryLabel.textContent = state.running ? 'Pause' : paused ? 'Resume' : (state.mode === 'focus' ? 'Start focus' : 'Start break');
     renderTime(remainingNow());
     renderProgress();
+    renderTasks();
   }
 
   // ---------- timer loop (timestamp based, accurate in background tabs) ----------
@@ -982,6 +1053,7 @@
     let next = 'focus';
     if (finished === 'focus') {
       stats.done += 1; stats.seconds += state.duration; stats.setDone += 1;
+      const at = tasks.find(t => t.id === activeTaskId); if (at) { at.done += 1; saveTasks(); }
       next = stats.setDone >= settings.setLength ? 'long' : 'short';
       saveStats();
     }
@@ -1127,6 +1199,85 @@
     soundBtn.setAttribute('aria-label', settings.chime ? 'Sound on' : 'Sound off');
   }
 
+  // ---------- tasks ----------
+  const taskList = $('#taskList'), taskForm = $('#taskForm'), taskInput = $('#taskInput');
+  const tasksCount = $('#tasksCount'), tasksSummary = $('#tasksSummary'), clearDoneBtn = $('#clearDone');
+  let tasks = load(KEYS.tasks, []); if (!Array.isArray(tasks)) tasks = [];
+  tasks = tasks.filter(t => t && typeof t.title === 'string').map(t => ({ id: String(t.id), title: t.title.slice(0, 120), est: clamp(Math.round(Number(t.est)) || 1, 1, 99), done: Math.max(0, Math.round(Number(t.done)) || 0), completed: !!t.completed }));
+  let activeTaskId = load(KEYS.activeTask, null);
+  if (!tasks.some(t => t.id === activeTaskId)) activeTaskId = null;
+  const saveTasks = () => { store(KEYS.tasks, tasks); store(KEYS.activeTask, activeTaskId); };
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  function addTask(title) {
+    title = title.trim().slice(0, 120);
+    if (!title) return;
+    const t = { id: uid(), title, est: 1, done: 0, completed: false };
+    tasks.push(t);
+    if (!activeTaskId) activeTaskId = t.id;
+    saveTasks(); render();
+  }
+  function icon(points) {
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('class', 'icon'); svg.setAttribute('aria-hidden', 'true');
+    const pl = document.createElementNS(NS, 'polyline'); pl.setAttribute('points', points); svg.appendChild(pl); return svg;
+  }
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function renderTasks() {
+    taskList.innerHTML = '';
+    tasks.forEach(t => {
+      const li = el('li', 'task' + (t.id === activeTaskId ? ' active' : '') + (t.completed ? ' completed' : ''));
+      li.dataset.id = t.id;
+      const check = el('button', 'check'); check.type = 'button'; check.setAttribute('role', 'checkbox'); check.setAttribute('aria-checked', String(t.completed)); check.setAttribute('aria-label', t.completed ? 'Mark as not finished' : 'Mark as finished'); check.appendChild(icon('20 6 9 17 4 12'));
+      const title = el('span', 'task-title', t.title); title.title = 'Click to rename';
+      const count = el('span', 'task-count');
+      const minus = el('button', 'mini', '−'); minus.type = 'button'; minus.dataset.act = 'less'; minus.setAttribute('aria-label', 'One pomodoro less');
+      const num = el('span', '', t.done + '/' + t.est);
+      const plus = el('button', 'mini', '+'); plus.type = 'button'; plus.dataset.act = 'more'; plus.setAttribute('aria-label', 'One pomodoro more');
+      count.append(minus, num, plus);
+      const del = el('button', 'task-del', '×'); del.type = 'button'; del.setAttribute('aria-label', 'Delete task');
+      li.append(check, title, count, del);
+      taskList.appendChild(li);
+    });
+    const finished = tasks.filter(t => t.completed).length;
+    tasksCount.textContent = tasks.length ? finished + '/' + tasks.length + ' done' : '';
+    clearDoneBtn.hidden = finished === 0;
+    const left = tasks.filter(t => !t.completed).reduce((n, t) => n + Math.max(0, t.est - t.done), 0);
+    if (left > 0) {
+      const mins = left * settings.focus + (left - 1) * settings.short;
+      const h = Math.floor(mins / 60), m = mins % 60;
+      const when = new Date(Date.now() + mins * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      tasksSummary.textContent = left + ' pomodoro' + (left === 1 ? '' : 's') + ' left · about ' + (h ? h + ' h ' : '') + m + ' min · finish around ' + when;
+      tasksSummary.hidden = false;
+    } else tasksSummary.hidden = true;
+  }
+  function renameTask(li, t) {
+    const title = $('.task-title', li); if (!title) return;
+    const input = el('input', 'task-rename'); input.type = 'text'; input.maxLength = 120; input.value = t.title; input.setAttribute('aria-label', 'Task name');
+    title.replaceWith(input); input.focus(); input.select();
+    let finished = false;
+    const finish = apply => {
+      if (finished) return; finished = true;
+      const v = input.value.trim().slice(0, 120);
+      if (apply && v) t.title = v;
+      saveTasks(); render();
+    };
+    input.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); finish(true); } else if (e.key === 'Escape') finish(false); });
+    input.addEventListener('blur', () => finish(true));
+  }
+  taskForm.addEventListener('submit', e => { e.preventDefault(); addTask(taskInput.value); taskInput.value = ''; taskInput.focus(); });
+  taskList.addEventListener('click', e => {
+    const li = e.target.closest('.task'); if (!li) return;
+    const t = tasks.find(x => x.id === li.dataset.id); if (!t) return;
+    if (e.target.closest('.check')) { t.completed = !t.completed; if (t.completed && activeTaskId === t.id) { const next = tasks.find(x => !x.completed); activeTaskId = next ? next.id : null; } else if (!t.completed && !activeTaskId) activeTaskId = t.id; }
+    else if (e.target.closest('.task-del')) { tasks = tasks.filter(x => x.id !== t.id); if (activeTaskId === t.id) { const next = tasks.find(x => !x.completed); activeTaskId = next ? next.id : null; } }
+    else if (e.target.closest('[data-act="less"]')) t.est = Math.max(1, t.est - 1);
+    else if (e.target.closest('[data-act="more"]')) t.est = Math.min(99, t.est + 1);
+    else if (e.target.closest('.task-title') && !t.completed) { renameTask(li, t); return; }
+    else if (!t.completed) activeTaskId = t.id;
+    saveTasks(); render();
+  });
+  clearDoneBtn.addEventListener('click', () => { tasks = tasks.filter(t => !t.completed); if (!tasks.some(t => t.id === activeTaskId)) activeTaskId = null; saveTasks(); render(); });
+
   // ---------- wiring ----------
   primary.addEventListener('click', toggle);
   $('#minus').addEventListener('click', e => adjust(e.shiftKey ? -5 : -1));
@@ -1169,6 +1320,7 @@
       case '2': setMode('short'); break;
       case '3': setMode('long'); break;
       case 's': case 'S': sheetOpen() ? closeSheet() : openSheet(); break;
+      case 't': case 'T': e.preventDefault(); taskInput.focus(); break;
       case 'Escape': closeSheet(); break;
     }
   });
