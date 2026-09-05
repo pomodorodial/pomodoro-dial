@@ -4,12 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pomodoro Timer – Free, Minimal, No Sign-up | Pomodoro Dial</title>
-<meta name="description" content="Free online Pomodoro timer with a wind-up dial. 25-minute focus sessions you can adjust by the minute, short and long breaks, a chime, keyboard shortcuts and dark mode. No ads, no account.">
+<meta name="description" content="Free online Pomodoro timer with a wind-up dial. 25-minute focus sessions you can adjust by the minute, tasks, stats and streaks, a chime, keyboard shortcuts, dark mode, works offline. No ads, no account.">
 <meta name="theme-color" content="#F4F3F1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E1015" media="(prefers-color-scheme: dark)">
 <link rel="canonical" href="https://pomodorodial.com/">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pomodoro">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Pomodoro Dial">
 <meta property="og:title" content="Pomodoro Dial – a free Pomodoro timer with a real dial">
@@ -32,7 +36,7 @@
   "browserRequirements": "Requires JavaScript",
   "isAccessibleForFree": true,
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "featureList": ["Tasks list with pomodoro estimates", "Daily stats, streaks and CSV export", "25/5/15 minute sessions", "Adjust time by the minute", "Long break after four sessions", "End-of-session chime", "Keyboard shortcuts", "Dark mode"]
+  "featureList": ["Tasks list with pomodoro estimates", "Daily stats, streaks and CSV export", "Installable app that works offline", "25/5/15 minute sessions", "Adjust time by the minute", "Long break after four sessions", "End-of-session chime", "Keyboard shortcuts", "Dark mode"]
 }
 </script>
 <link rel="preload" href="fonts/azeret-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -801,6 +805,17 @@
     </section>
 
     <section class="group">
+      <h3>App</h3>
+      <div class="row">
+        <span class="lbl">Install as an app<small id="installHint">Opens in its own window and works offline. In Chrome or Edge use the install icon in the address bar; on iPhone use Share, then Add to Home Screen.</small></span>
+        <button class="ghost" id="installBtn" hidden>Install</button>
+      </div>
+      <div class="row">
+        <span class="lbl">Offline copy<small id="offlineState">Checking…</small></span>
+      </div>
+    </section>
+
+    <section class="group">
       <h3>Today</h3>
       <div class="row">
         <span class="lbl" id="todaySheet">0 pomodoros · 0 min</span>
@@ -887,6 +902,7 @@
     <li><strong>Keyboard first.</strong> Space, the arrow keys and single letters do everything.</li>
     <li><strong>Sound you will notice.</strong> A two-note chime at the end, and an optional mechanical tick while you work.</li>
     <li><strong>Private.</strong> Your settings and today's count stay in your browser. Nothing is sent to a server.</li>
+    <li><strong>Installable and offline.</strong> Add it to your phone home screen or desktop and it opens without internet.</li>
     <li><strong>Light and dark.</strong> It follows your system theme.</li>
   </ul>
 
@@ -919,8 +935,8 @@
     <dd>No. There is nothing to sign up for and nothing to install.</dd>
     <dt>Will it remember my settings?</dt>
     <dd>Yes, in this browser on this device. Clearing your browser data resets them.</dd>
-    <dt>Can I use it on my phone?</dt>
-    <dd>Yes. The page fits phone screens, and you can add it to your home screen from the browser menu.</dd>
+    <dt>Can I install it or use it offline?</dt>
+    <dd>Yes. It is a web app you can install: in Chrome or Edge click the install icon in the address bar or use Settings, Install; on iPhone use Share, then Add to Home Screen. Once opened, it keeps a copy on your device and starts even without internet.</dd>
     <dt>Is it free?</dt>
     <dd>Yes, with no ads and no paid version.</dd>
   </dl>
@@ -1470,6 +1486,27 @@
     }
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && state.running) tick(); });
+
+  // ---------- install and offline ----------
+  const installBtn = $('#installBtn'), installHint = $('#installHint'), offlineState = $('#offlineState');
+  let installEvent = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvent = e; installBtn.hidden = false; installHint.textContent = 'Opens in its own window and works offline.'; });
+  installBtn.addEventListener('click', async () => {
+    if (!installEvent) return;
+    installEvent.prompt();
+    try { await installEvent.userChoice; } catch (e) {}
+    installEvent = null; installBtn.hidden = true;
+  });
+  window.addEventListener('appinstalled', () => { installBtn.hidden = true; installHint.textContent = 'Installed. Open it from your apps like any other program.'; showToast('Pomodoro Dial installed'); });
+  if (matchMedia('(display-mode: standalone)').matches) installHint.textContent = 'You are using the installed app.';
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        offlineState.textContent = reg.active ? 'Ready. The timer opens even without internet.' : 'Saving a copy for offline use…';
+        navigator.serviceWorker.ready.then(() => { offlineState.textContent = 'Ready. The timer opens even without internet.'; });
+      }).catch(() => { offlineState.textContent = 'Not available in this browser.'; });
+    });
+  } else offlineState.textContent = 'Not available here.';
 
   // ---------- boot ----------
   sheet.inert = true; statsSheet.inert = true;
