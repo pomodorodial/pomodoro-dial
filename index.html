@@ -884,7 +884,7 @@
 
   <h2>How to use it</h2>
   <ol>
-    <li><strong>Pick a session type.</strong> Focus, short break or long break. Each has its own length in Settings.</li>
+    <li><strong>Pick a session type.</strong> Focus, short break or long break. Each has its own length in Settings. Switching while a session is running asks before discarding it.</li>
     <li><strong>Adjust the minutes if you want.</strong> Use the −1 and +1 buttons, hold Shift for five, or click the digits and type a number.</li>
     <li><strong>Start.</strong> The dial winds down. Pause any time. The timer keeps exact time even when the tab is in the background.</li>
     <li><strong>Take the break when the chime rings.</strong> The next session is ready for you. Turn on auto-start in Settings if you want it to begin on its own.</li>
@@ -1118,13 +1118,18 @@
   }
   const toggle = () => state.running ? pause() : start();
   function reset() { stopLoop(); endEdit(false); state = fresh(state.mode); save(); render(); }
-  function setMode(mode) {
+  function setMode(mode, force) {
+    if (mode === state.mode && !force) return;
+    if (!force && !isFresh() && state.remaining > 0) {
+      const ok = confirm('Switch to ' + MODES[mode].toLowerCase() + '? Your current ' + MODES[state.mode].toLowerCase() + ' session (' + fmt(remainingNow()) + ' left) will be discarded.');
+      if (!ok) return;
+    }
     stopLoop(); endEdit(false);
     state = fresh(mode);
     if (mode === 'focus' && stats.setDone >= settings.setLength) { stats.setDone = 0; saveStats(); }
     save(); render();
   }
-  const skip = () => setMode(state.mode === 'focus' ? 'short' : 'focus');
+  const skip = () => setMode(state.mode === 'focus' ? 'short' : 'focus', true);
 
   function complete(silent) {
     stopLoop(); rollover();
@@ -1143,7 +1148,7 @@
       notify(MODES[finished] + ' complete', settings[next] + ' minute ' + MODES[next].toLowerCase() + ' is next');
     }
     showToast(MODES[finished] + ' complete · ' + MODES[next].toLowerCase() + ' next');
-    setMode(next);
+    setMode(next, true);
     if (next === 'focus' ? settings.autoFocus : settings.autoBreak) start();
   }
 
