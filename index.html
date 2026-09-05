@@ -945,7 +945,7 @@
   </ol>
 
   <h2>What is the Pomodoro Technique?</h2>
-  <p>Francesco Cirillo came up with it in the late 1980s while he was a student, using a tomato-shaped kitchen timer. <em>Pomodoro</em> is Italian for tomato. The method is simple: work on one task for 25 minutes without interruption, rest for 5, and after four rounds rest for 15 to 30 minutes. Short, fixed sessions make starting easier, and the breaks keep your attention fresh across a long day.</p>
+  <p>Francesco Cirillo came up with it in the late 1980s while he was a student, using a tomato-shaped kitchen timer. <em>Pomodoro</em> is Italian for tomato. The method is simple: work on one task for 25 minutes without interruption, rest for 5, and after four rounds rest for 15 to 30 minutes. Short, fixed sessions make starting easier, and the breaks keep your attention fresh across a long day. <a href="/pomodoro-technique/">Read the full guide</a>: the six steps, why it works, and how to pick your interval.</p>
 
   <h2>Why this timer</h2>
   <ul>
@@ -998,6 +998,10 @@
   <div class="about-footer">
     <span>Pomodoro Dial</span>
     <a href="#app">Back to the timer</a>
+    <a href="/pomodoro-technique/">The Pomodoro Technique</a>
+    <a href="/about/">About</a>
+    <a href="/privacy/">Privacy</a>
+    <a href="/changelog/">Changelog</a>
     <a href="#feedback" id="feedbackLink">Send feedback</a>
     <a href="https://github.com/pomodorodial/pomodoro-dial">Source on GitHub</a>
   </div>
@@ -1638,6 +1642,9 @@
     else complete(true);                                   // ended while the page was closed
   }
   render();
+  if (location.hash === '#feedback') { openFeedback(); history.replaceState(null, '', location.pathname + location.search); }
+  else if (location.hash === '#stats') { openStats(); history.replaceState(null, '', location.pathname + location.search); }
+  else if (location.hash === '#settings') { openSheet(); history.replaceState(null, '', location.pathname + location.search); }
 })();
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1d7ceec827004081acc2a2e60663a9ab"}'></script><!-- End Cloudflare Web Analytics -->

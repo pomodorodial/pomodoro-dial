@@ -60,6 +60,16 @@ A domain is the only thing worth paying for: it is your brand in search results 
 3. Check the share preview at opengraph.xyz or by pasting the link into a chat app.
 4. Tell people: a "Show HN" on news.ycombinator.com, r/productivity and r/webdev, Product Hunt, X. Links from those places are what moves a new site up in Google.
 
+## Content pages
+
+Pages such as `/pomodoro-technique/`, `/about/`, `/privacy/` and `/changelog/` are built from `content/<slug>.html` with `tools/layout.html` and `site.css`. After editing or adding a content file, run:
+
+```bash
+python3 tools/build.py
+```
+
+It writes `<slug>/index.html` for every page and regenerates `sitemap.xml`. Commit the generated files together with the source.
+
 ## Files
 
 | File | Purpose |
@@ -68,7 +78,8 @@ A domain is the only thing worth paying for: it is your brand in search results 
 | `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | Icons |
 | `manifest.webmanifest`, `sw.js` | Install and offline support |
 | `og-image.png` | Preview image for links shared on social media and chat |
-| `robots.txt`, `sitemap.xml` | Search engine files |
+| `content/`, `tools/`, `site.css` | Source, builder and stylesheet for the content pages |
+| `robots.txt`, `sitemap.xml` | Search engine files (the sitemap is generated) |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are |
 | `set-url.sh` | Writes your real URL into every file that needs it |
 | `start.sh` | Local server |
