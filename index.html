@@ -922,7 +922,7 @@
         <input id="fbEmail" type="email" maxlength="200" placeholder="optional">
       </div>
       <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <div id="turnstile"></div>
+      <div id="turnstileBox"></div>
       <div class="fb-actions"><button class="fb-send" id="fbSend" type="submit">Send</button><span class="fb-status" id="fbStatus" aria-live="polite"></span></div>
     </form>
     <p class="stat-note">Stored: the message, its type, the page you were on, and the email if you give one, plus a scrambled version of your address used only to stop spam. Nothing is shown publicly. The human check loads a Cloudflare script only while this panel is open.</p>
@@ -1563,7 +1563,7 @@
     turnstileWidget = 'loading';
     const render = () => {
       try {
-        const id = window.turnstile.render('#turnstile', {
+        const id = window.turnstile.render('#turnstileBox', {
           sitekey: TURNSTILE_SITE_KEY, theme: 'auto', retry: 'auto',
           callback: t => { turnstileToken = t; setFbStatus('', false); },
           'expired-callback': () => { turnstileToken = ''; },
