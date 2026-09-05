@@ -628,6 +628,27 @@
   .chart .val { font-family: 'Azeret Mono', ui-monospace, monospace; font-size: 11px; fill: var(--text-2); }
   button#today { font-variant-numeric: tabular-nums; }
 
+  /* Feedback */
+  .sheet a { color: var(--accent); }
+  .fb-form { display: flex; flex-direction: column; gap: 14px; }
+  .fb-kinds { display: inline-flex; align-self: flex-start; gap: 2px; padding: 4px; border-radius: 999px; background: var(--bg-sunk); border: 1px solid var(--line); }
+  .fb-kinds button { border: 0; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 500; padding: 7px 14px; border-radius: 999px; transition: background .2s, color .2s; }
+  .fb-kinds button[aria-pressed="true"] { background: var(--bg-elev); color: var(--text); box-shadow: var(--shadow-sm); }
+  .fb-field { display: flex; flex-direction: column; gap: 6px; }
+  .fb-field label { font-size: 13px; color: var(--text-2); }
+  .fb-field textarea, .fb-field input { width: 100%; font: inherit; font-size: 14px; color: var(--text); background: var(--bg-sunk); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; outline: none; transition: border-color .2s; }
+  .fb-field textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+  .fb-field textarea:focus, .fb-field input:focus { border-color: var(--accent); }
+  .fb-field ::placeholder { color: var(--text-3); }
+  .fb-count { font-size: 12px; color: var(--text-3); text-align: right; font-variant-numeric: tabular-nums; }
+  .fb-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .fb-send { height: 42px; padding: 0 22px; border-radius: 999px; border: 0; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 600; transition: opacity .2s; }
+  .fb-send[disabled] { opacity: .5; cursor: default; }
+  .fb-status { font-size: 13px; color: var(--text-2); }
+  .fb-status.error { color: var(--focus); }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  @media (max-width: 480px) { .topbar-actions a[href="#about"] { display: none; } }
+
   /* About section (crawlable content below the timer) */
   a.ghost { text-decoration: none; }
   .topbar-actions { align-items: center; }
@@ -666,6 +687,7 @@
     </div>
     <div class="topbar-actions">
       <a class="ghost" href="#about">About</a>
+      <button class="ghost" id="feedbackBtn" aria-expanded="false" title="Send feedback (F)">Feedback</button>
       <button class="icon-btn" id="statsBtn" aria-label="Stats" aria-expanded="false" title="Stats and streaks">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="20" x2="6" y2="11"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
       </button>
@@ -833,6 +855,7 @@
         <kbd>1 2 3</kbd><span>Focus, short break, long break</span>
         <kbd>T</kbd><span>Add a task</span>
         <kbd>S</kbd><span>Open or close settings</span>
+        <kbd>F</kbd><span>Send feedback</span>
         <kbd>Esc</kbd><span>Close</span>
       </div>
     </section>
@@ -875,6 +898,37 @@
     </section>
   </aside>
 
+  <aside class="sheet" id="feedbackSheet" aria-label="Feedback" aria-hidden="true">
+    <div class="sheet-head">
+      <h2>Feedback</h2>
+      <button class="icon-btn" id="closeFeedback" aria-label="Close feedback">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p class="stat-note" style="margin: 0">Found a bug, or want something added? A few words are enough. Every message is read.</p>
+    <form class="fb-form" id="fbForm" autocomplete="off" novalidate>
+      <div class="fb-kinds" role="group" aria-label="Type of feedback">
+        <button type="button" data-kind="idea" aria-pressed="true">Idea</button>
+        <button type="button" data-kind="bug" aria-pressed="false">Bug</button>
+        <button type="button" data-kind="other" aria-pressed="false">Other</button>
+      </div>
+      <div class="fb-field">
+        <label for="fbMessage">Message</label>
+        <textarea id="fbMessage" maxlength="2000" placeholder="What happened, or what would help you?"></textarea>
+        <div class="fb-count" id="fbCount">0 / 2000</div>
+      </div>
+      <div class="fb-field">
+        <label for="fbEmail">Email, only if you want a reply</label>
+        <input id="fbEmail" type="email" maxlength="200" placeholder="optional">
+      </div>
+      <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div id="turnstile"></div>
+      <div class="fb-actions"><button class="fb-send" id="fbSend" type="submit">Send</button><span class="fb-status" id="fbStatus" aria-live="polite"></span></div>
+    </form>
+    <p class="stat-note">Stored: the message, its type, the page you were on, and the email if you give one, plus a scrambled version of your address used only to stop spam. Nothing is shown publicly. The human check loads a Cloudflare script only while this panel is open.</p>
+    <p class="stat-note">Prefer GitHub? <a href="https://github.com/pomodorodial/pomodoro-dial/issues/new">Open an issue</a>.</p>
+  </aside>
+
   <div class="toast" id="toast" role="status"></div>
 </div>
 
@@ -901,7 +955,7 @@
     <li><strong>Accurate in the background.</strong> It counts from the clock, not from ticks, so a hidden tab or a laptop nap doesn't throw it off.</li>
     <li><strong>Keyboard first.</strong> Space, the arrow keys and single letters do everything.</li>
     <li><strong>Sound you will notice.</strong> A two-note chime at the end, and an optional mechanical tick while you work.</li>
-    <li><strong>Private.</strong> Your settings and today's count stay in your browser. Nothing is sent to a server.</li>
+    <li><strong>Private.</strong> Your settings, tasks and stats stay in your browser. Nothing is sent to a server, except a message you choose to send through the feedback form.</li>
     <li><strong>Installable and offline.</strong> Add it to your phone home screen or desktop and it opens without internet.</li>
     <li><strong>Light and dark.</strong> It follows your system theme.</li>
   </ul>
@@ -944,6 +998,7 @@
   <div class="about-footer">
     <span>Pomodoro Dial</span>
     <a href="#app">Back to the timer</a>
+    <a href="#feedback" id="feedbackLink">Send feedback</a>
     <a href="https://github.com/pomodorodial/pomodoro-dial">Source on GitHub</a>
   </div>
 </section>
@@ -1472,6 +1527,7 @@
   document.addEventListener('keydown', e => {
     if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
     const t = e.target;
+    if (e.key === 'Escape') { if (!timeInput.hidden) return; closeAny(); return; }
     if (t && (t.matches('input, textarea, select') || t.isContentEditable)) return;
     const k = e.key;
     if (k === ' ') { if (t && t.closest('button')) return; e.preventDefault(); toggle(); return; }
@@ -1487,10 +1543,61 @@
       case '3': setMode('long'); break;
       case 's': case 'S': sheetOpen() ? closeSheet() : openSheet(); break;
       case 't': case 'T': e.preventDefault(); taskInput.focus(); break;
-      case 'Escape': closeSheet(); break;
+      case 'f': case 'F': e.preventDefault(); feedbackOpen() ? closeAny() : openFeedback(); break;
     }
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && state.running) tick(); });
+
+  // ---------- feedback ----------
+  const FEEDBACK_API = 'https://api.pomodorodial.com/feedback';
+  const TURNSTILE_SITE_KEY = '0x4AAAAAAEpWcORDrCo161UR';
+  const feedbackSheet = $('#feedbackSheet'), feedbackBtn = $('#feedbackBtn'), closeFeedbackBtn = $('#closeFeedback');
+  const fbForm = $('#fbForm'), fbMessage = $('#fbMessage'), fbEmail = $('#fbEmail'), fbCount = $('#fbCount'), fbSend = $('#fbSend'), fbStatus = $('#fbStatus');
+  let fbKind = 'idea', turnstileWidget = null, turnstileToken = '';
+  const feedbackOpen = () => !!openPanel && openPanel.el === feedbackSheet;
+  const setFbStatus = (msg, isError) => { fbStatus.textContent = msg; fbStatus.classList.toggle('error', !!isError); };
+  function loadTurnstile() {
+    if (!TURNSTILE_SITE_KEY || turnstileWidget !== null) return;
+    turnstileWidget = 'loading';
+    const render = () => {
+      try {
+        turnstileWidget = window.turnstile.render('#turnstile', { sitekey: TURNSTILE_SITE_KEY, theme: 'auto', callback: t => { turnstileToken = t; }, 'expired-callback': () => { turnstileToken = ''; }, 'error-callback': () => { turnstileToken = ''; } });
+      } catch (e) { turnstileWidget = null; }
+    };
+    if (window.turnstile) { render(); return; }
+    const sc = document.createElement('script');
+    sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async = true;
+    sc.onload = render; sc.onerror = () => { turnstileWidget = null; };
+    document.head.appendChild(sc);
+  }
+  function openFeedback() { openPanelEl(feedbackSheet, feedbackBtn, fbMessage); loadTurnstile(); }
+  feedbackBtn.addEventListener('click', () => feedbackOpen() ? closeAny() : openFeedback());
+  closeFeedbackBtn.addEventListener('click', closeAny);
+  $('#feedbackLink').addEventListener('click', e => { e.preventDefault(); openFeedback(); });
+  $$('.fb-kinds button').forEach(b => b.addEventListener('click', () => { fbKind = b.dataset.kind; $$('.fb-kinds button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+  fbMessage.addEventListener('input', () => { fbCount.textContent = fbMessage.value.length + ' / 2000'; });
+  fbForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const message = fbMessage.value.trim();
+    if (message.length < 3) { setFbStatus('Write a few words first.', true); fbMessage.focus(); return; }
+    if (TURNSTILE_SITE_KEY && !turnstileToken) { setFbStatus('One moment, the human check is still running.', false); return; }
+    fbSend.disabled = true; setFbStatus('Sending…', false);
+    try {
+      const r = await fetch(FEEDBACK_API, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: fbKind, message, email: fbEmail.value.trim(), page: location.pathname + location.search, token: turnstileToken, website: fbForm.website.value })
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.ok) throw new Error(d.error || 'Something went wrong. Please try again.');
+      fbMessage.value = ''; fbEmail.value = ''; fbCount.textContent = '0 / 2000'; setFbStatus('', false);
+      closeAny(); showToast('Thanks, got it. Every message is read.');
+    } catch (err) {
+      setFbStatus(err && err.message && !/fetch/i.test(err.message) ? err.message : 'Could not send. Check your connection and try again.', true);
+    } finally {
+      fbSend.disabled = false; turnstileToken = '';
+      try { if (window.turnstile && turnstileWidget && turnstileWidget !== 'loading') window.turnstile.reset(turnstileWidget); } catch (e) {}
+    }
+  });
 
   // ---------- install and offline ----------
   const installBtn = $('#installBtn'), installHint = $('#installHint'), offlineState = $('#offlineState');
@@ -1514,7 +1621,7 @@
   } else offlineState.textContent = 'Not available here.';
 
   // ---------- boot ----------
-  sheet.inert = true; statsSheet.inert = true;
+  sheet.inert = true; statsSheet.inert = true; feedbackSheet.inert = true;
   syncSettings();
   if (state.running) {
     if (state.endAt > now()) startLoop();
