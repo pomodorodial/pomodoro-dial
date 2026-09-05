@@ -4,6 +4,7 @@ A free, single-file Pomodoro timer with a wind-up dial. Everything runs in the b
 
 - Tasks with pomodoro estimates and a rough finish time
 - Stats: pomodoros per day, streaks, lifetime totals, CSV export
+- Installable web app that works offline (`manifest.webmanifest`, `sw.js`)
 - 25 / 5 / 15 minute sessions, long break after four
 - Adjust by the minute (−1, +1, Shift for five) or click the digits and type
 - Accurate in background tabs, resumes after a reload
@@ -64,7 +65,8 @@ A domain is the only thing worth paying for: it is your brand in search results 
 | File | Purpose |
 | --- | --- |
 | `index.html` | The whole app, plus SEO tags and the About section |
-| `favicon.svg`, `apple-touch-icon.png`, `icon-512.png` | Icons |
+| `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | Icons |
+| `manifest.webmanifest`, `sw.js` | Install and offline support |
 | `og-image.png` | Preview image for links shared on social media and chat |
 | `robots.txt`, `sitemap.xml` | Search engine files |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are |
