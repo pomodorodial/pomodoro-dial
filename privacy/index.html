@@ -23,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="/fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css">
-<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Pomodoro Dial", "item": "https://pomodorodial.com/"}, {"@type": "ListItem", "position": 2, "name": "Privacy", "item": "https://pomodorodial.com/privacy/"}]}, {"@type": "WebPage", "name": "Privacy | Pomodoro Dial", "description": "What Pomodoro Dial stores, where it stays, which requests the site makes, and how to delete your data. Written in plain language.", "url": "https://pomodorodial.com/privacy/", "dateModified": "2026-09-05"}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Pomodoro Dial", "item": "https://pomodorodial.com/"}, {"@type": "ListItem", "position": 2, "name": "Privacy", "item": "https://pomodorodial.com/privacy/"}]}, {"@type": "WebPage", "name": "Privacy | Pomodoro Dial", "description": "What Pomodoro Dial stores, where it stays, which requests the site makes, and how to delete your data. Written in plain language.", "url": "https://pomodorodial.com/privacy/", "dateModified": "2026-09-06"}]}</script>
 </head>
 <body>
 <div class="wrap">
@@ -43,8 +43,8 @@
     <article>
       <p class="crumbs"><a href="/">Pomodoro Dial</a> › Privacy</p>
 <h1>Privacy</h1>
-<p class="lede">The short version: everything you enter stays in your browser. The site has no accounts, sets no cookies of its own, and makes two optional requests to third parties, both explained below.</p>
-<p class="meta">Last updated 5 September 2026</p>
+<p class="lede">The short version: your timer settings, tasks and session statistics stay in your browser. The site has no accounts and sets no cookies of its own. Cloudflare Web Analytics loads with the page; opening or submitting the optional feedback form makes additional requests, explained below.</p>
+<p class="meta">Last updated 6 September 2026</p>
 
 <h2>What stays on your device</h2>
 <p>Your settings, tasks, session history and streaks are stored in your browser's local storage on the device you use. They are never sent to a server. That also means they do not follow you to another device or browser, and clearing your browser's site data removes them.</p>
@@ -54,7 +54,9 @@
 <p>The site uses Cloudflare Web Analytics to count visits. It records the page address, the referring site, your country, and the type of browser and device, and shows them in aggregate. According to Cloudflare, it does not use cookies or local storage, does not fingerprint visitors, and does not store IP addresses in its reports. It is loaded from <code>static.cloudflareinsights.com</code>. If your browser or an extension blocks that script, the timer works exactly the same.</p>
 
 <h2>The feedback form</h2>
-<p>When you send a message through the feedback panel, the following is stored: the message, its type (idea, bug or other), the address of the page you were on, your email address if you chose to give one, your country, your browser's name and version, and a scrambled (hashed) version of your network address used only to limit spam. The message is emailed to the person who runs the site and kept until it has been dealt with, then deleted within 90 days.</p>
+<p>When you send a message through the feedback panel, the following is stored: the message, its type (idea, bug or other), the address of the page you were on, your email address if you chose to give one, your country, your browser's name and version, and a salted hash of your network address (an IPv6 network prefix where applicable) used to limit spam. This hash is not a guarantee of anonymity.</p>
+<p>The feedback database keeps the message until it is marked handled. It then becomes eligible for deletion after 30 days, with cleanup running daily. Email notifications are also sent to the person who runs the site when available and within the daily sending limit; feedback is still stored when notifications are unavailable. Database cleanup does not delete copies already delivered to that mailbox.</p>
+<p>To enforce the daily email limit, the service also keeps a message identifier and UTC date for each reserved notification attempt. These records contain no message text or email address and are cleaned up after 30 days.</p>
 <p>The panel includes a human check by Cloudflare Turnstile. Its script loads from <code>challenges.cloudflare.com</code> only while the panel is open, and Cloudflare may set a cookie on its own domain to complete the check. The form itself talks to <code>api.pomodorodial.com</code>, a small service running on Cloudflare Workers.</p>
 
 <h2>Hosting and other requests</h2>

@@ -1,2 +1,7 @@
 SEO-PLAN.md
 SECURITY-REVIEW.md
+
+# Keep local Cloudflare tooling data and secret files out of the public site.
+.wrangler/
+.dev.vars*
+.env*

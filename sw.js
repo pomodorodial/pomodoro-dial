@@ -1,7 +1,7 @@
 /* Pomodoro Dial service worker: makes the app work offline.
    Pages are fetched network-first (so updates arrive immediately) with the cached copy as fallback.
    Fonts, icons and other files are served from cache and refreshed in the background. */
-const VERSION = 'pomodoro-dial-v3';
+const VERSION = 'pomodoro-dial-v4';
 const PRECACHE = [
   './', 'index.html', 'site.css', 'manifest.webmanifest', 'favicon.svg', 'icon-192.png', 'icon-512.png',
   'fonts/azeret-mono-latin.woff2', 'fonts/azeret-mono-latin-ext.woff2',

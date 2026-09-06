@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FjQzqPuuKEjphupNJ2suBJc3NHCrwHonwWsJE3l0LcU=' https://static.cloudflareinsights.com https://challenges.cloudflare.com; connect-src 'self' https://api.pomodorodial.com https://cloudflareinsights.com https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Cjelz+duh3NJ99mJnR58I1ZqQjiGLQUnJ4vO5TOUw8I=' https://static.cloudflareinsights.com https://challenges.cloudflare.com; connect-src 'self' https://api.pomodorodial.com https://cloudflareinsights.com https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; upgrade-insecure-requests">
 <title>Pomodoro Timer – Free, Minimal, No Sign-up | Pomodoro Dial</title>
 <meta name="description" content="Free online Pomodoro timer with a wind-up dial. 25-minute focus sessions you can adjust by the minute, tasks, stats and streaks, a chime, keyboard shortcuts, dark mode, works offline. No ads, no account.">
 <meta name="theme-color" content="#F4F3F1" media="(prefers-color-scheme: light)">
@@ -895,7 +895,7 @@
       <h3>Your data</h3>
       <div class="row"><span class="lbl">Export as CSV<small>One line per day: date, pomodoros, minutes</small></span><button class="ghost" id="exportCsv">Download</button></div>
       <div class="row"><span class="lbl">Delete history<small>Removes every day. Cannot be undone.</small></span><button class="ghost" id="clearHistory">Delete</button></div>
-      <p class="stat-note">Everything stays in this browser. Nothing is sent anywhere.</p>
+      <p class="stat-note">Your session statistics stay in this browser and are not uploaded.</p>
     </section>
   </aside>
 
@@ -956,7 +956,7 @@
     <li><strong>Accurate in the background.</strong> It counts from the clock, not from ticks, so a hidden tab or a laptop nap doesn't throw it off.</li>
     <li><strong>Keyboard first.</strong> Space, the arrow keys and single letters do everything.</li>
     <li><strong>Sound you will notice.</strong> A two-note chime at the end, and an optional mechanical tick while you work.</li>
-    <li><strong>Private.</strong> Your settings, tasks and stats stay in your browser. Nothing is sent to a server, except a message you choose to send through the feedback form.</li>
+    <li><strong>Private.</strong> Your settings, tasks and stats stay in your browser. The site uses Cloudflare Web Analytics; optional feedback is sent to our feedback service. <a href="/privacy/">Read the privacy details.</a></li>
     <li><strong>Installable and offline.</strong> Add it to your phone home screen or desktop and it opens without internet.</li>
     <li><strong>Light and dark.</strong> It follows your system theme.</li>
   </ul>
@@ -1648,9 +1648,9 @@
   }
   render();
   if (presetApplied) showToast('Preset applied: ' + settings.focus + ' / ' + settings.short + ' / ' + settings.long + ' min');
-  if (location.hash === '#feedback') { openFeedback(); history.replaceState(null, '', location.pathname + location.search); }
-  else if (location.hash === '#stats') { openStats(); history.replaceState(null, '', location.pathname + location.search); }
-  else if (location.hash === '#settings') { openSheet(); history.replaceState(null, '', location.pathname + location.search); }
+  if (location.hash === '#feedback') { openFeedback(); window.history.replaceState(null, '', location.pathname + location.search); }
+  else if (location.hash === '#stats') { openStats(); window.history.replaceState(null, '', location.pathname + location.search); }
+  else if (location.hash === '#settings') { openSheet(); window.history.replaceState(null, '', location.pathname + location.search); }
 })();
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1d7ceec827004081acc2a2e60663a9ab"}'></script><!-- End Cloudflare Web Analytics -->

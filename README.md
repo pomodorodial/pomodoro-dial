@@ -1,6 +1,6 @@
 # Pomodoro Dial
 
-A free, single-file Pomodoro timer with a wind-up dial. Everything runs in the browser; nothing is sent to a server.
+A free, single-file Pomodoro timer with a wind-up dial. The timer runs in the browser; settings, tasks and session statistics stay on the device. The site loads Cloudflare Web Analytics, and optional feedback is sent to a separate Cloudflare Worker. See [Privacy](https://pomodorodial.com/privacy/) for details.
 
 - Tasks with pomodoro estimates and a rough finish time
 - Stats: pomodoros per day, streaks, lifetime totals, CSV export
@@ -11,7 +11,7 @@ A free, single-file Pomodoro timer with a wind-up dial. Everything runs in the b
 - Chime, optional ticking, desktop notifications
 - Keyboard shortcuts, light and dark themes
 - Presets by link: `/?focus=50&short=10&long=20&sets=4` sets the durations and the number of focus sessions before a long break
-- Fonts served from the site itself (`fonts/`, SIL Open Font License); the only third-party request is the analytics beacon
+- Self-hosted fonts (`fonts/`, SIL Open Font License); Cloudflare Web Analytics loads with the page, and Turnstile loads when the feedback panel opens
 
 ## Run it locally
 
@@ -71,6 +71,16 @@ python3 tools/build.py
 It writes `<slug>/index.html` for every page and regenerates `sitemap.xml`. Commit the generated files together with the source.
 
 The same script also refreshes the Content-Security-Policy hash of the inline script in `index.html`, so run it after any edit to `index.html` as well. `python3 tools/build.py --check` only verifies (a local pre-commit hook runs it).
+
+## Local checks
+
+With Node.js 24 or later, run the dependency-free regression tests:
+
+```bash
+node --test tests/*.test.mjs
+```
+
+These check script syntax, CSP hashes on every generated page, panel deep links, and service-worker navigation caching. They do not replace a browser smoke test. The private feedback service has its own tests and database migrations; it is deployed separately from this public site.
 
 ## Files
 
