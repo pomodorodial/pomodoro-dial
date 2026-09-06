@@ -1,7 +1,7 @@
 /* Pomodoro Dial service worker: makes the app work offline.
    Pages are fetched network-first (so updates arrive immediately) with the cached copy as fallback.
    Fonts, icons and other files are served from cache and refreshed in the background. */
-const VERSION = 'pomodoro-dial-v2';
+const VERSION = 'pomodoro-dial-v3';
 const PRECACHE = [
   './', 'index.html', 'site.css', 'manifest.webmanifest', 'favicon.svg', 'icon-192.png', 'icon-512.png',
   'fonts/azeret-mono-latin.woff2', 'fonts/azeret-mono-latin-ext.woff2',
@@ -25,11 +25,12 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;           // analytics beacon etc. go straight to the network
 
   if (req.mode === 'navigate') {
+    const key = new URL(req.url); key.search = ''; key.hash = '';      // one cache entry per page, whatever the query string
     event.respondWith(
       fetch(req).then(res => {
-        if (res.ok) caches.open(VERSION).then(cache => cache.put(req, res.clone()));
+        if (res.ok) caches.open(VERSION).then(cache => cache.put(key.href, res.clone()));
         return res;
-      }).catch(() => caches.match(req).then(hit => hit || caches.match('./')).then(hit => hit || caches.match('index.html')))
+      }).catch(() => caches.match(key.href).then(hit => hit || caches.match('./')).then(hit => hit || caches.match('index.html')))
     );
     return;
   }

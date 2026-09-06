@@ -3,10 +3,37 @@
 Each content file starts with a JSON block:  <!--meta { "slug": "...", "title": "...", ... } -->
 Run: python3 tools/build.py
 """
-import json, re, datetime, pathlib, html
+import json, re, datetime, pathlib, html, hashlib, base64, sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = 'https://pomodorodial.com'
 layout = (ROOT / 'tools' / 'layout.html').read_text(encoding='utf-8')
+CHECK = '--check' in sys.argv
+
+# Content Security Policy. index.html has one inline script, allowed by its SHA-256 hash; the hash is recomputed here
+# on every build, so run this script (or --check) after editing index.html.
+CSP = ("default-src 'self'; script-src 'self' {extra}https://static.cloudflareinsights.com https://challenges.cloudflare.com; "
+       "connect-src 'self' https://api.pomodorodial.com https://cloudflareinsights.com https://challenges.cloudflare.com; "
+       "frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; "
+       "manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; upgrade-insecure-requests")
+CSP_RE = re.compile(r'<meta http-equiv="Content-Security-Policy" content="[^"]*">')
+def csp_meta(extra=''): return '<meta http-equiv="Content-Security-Policy" content="%s">' % CSP.format(extra=extra)
+def with_csp(text, meta):
+    if CSP_RE.search(text): return CSP_RE.sub(meta, text)
+    anchor = '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+    if anchor not in text: raise SystemExit('viewport meta not found; cannot place the CSP')
+    return text.replace(anchor, anchor + meta + '\n', 1)
+
+idx = ROOT / 'index.html'; s = idx.read_text(encoding='utf-8')
+a = s.index('<script>\n(() => {') + len('<script>'); b_ = s.index('</script>', a)
+digest = base64.b64encode(hashlib.sha256(s[a:b_].encode('utf-8')).digest()).decode()
+updated = with_csp(s, csp_meta("'sha256-%s' " % digest))
+if updated != s:
+    if CHECK: print('index.html: Content-Security-Policy hash is stale. Run: python3 tools/build.py'); sys.exit(1)
+    idx.write_text(updated, encoding='utf-8'); print('index.html: CSP hash updated')
+else:
+    print('index.html: CSP up to date')
+if CHECK: sys.exit(0)
+layout = with_csp(layout, csp_meta())
 
 def esc(s): return html.escape(s, quote=True)
 
@@ -17,6 +44,7 @@ for f in sorted((ROOT / 'content').glob('*.html')):
     if not m: raise SystemExit(f'{f}: missing <!--meta {{...}} --> block')
     meta = json.loads(m.group(1)); body = text[m.end():].rstrip() + '\n'
     slug = meta['slug'].strip('/'); url = f'{SITE}/{slug}/'
+    if not re.fullmatch(r'[a-z0-9-]+(/[a-z0-9-]+)*', slug): raise SystemExit(f'{f}: slug {slug!r} may only contain a-z, 0-9 and dashes')
     published = meta.get('published', datetime.date.today().isoformat()); updated = meta.get('updated', published)
     crumb = meta.get('crumb', meta.get('h1', meta['title']))
     ld = [{

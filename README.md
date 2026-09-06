@@ -70,6 +70,8 @@ python3 tools/build.py
 
 It writes `<slug>/index.html` for every page and regenerates `sitemap.xml`. Commit the generated files together with the source.
 
+The same script also refreshes the Content-Security-Policy hash of the inline script in `index.html`, so run it after any edit to `index.html` as well. `python3 tools/build.py --check` only verifies (a local pre-commit hook runs it).
+
 ## Files
 
 | File | Purpose |
